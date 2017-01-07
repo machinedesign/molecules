@@ -17,7 +17,7 @@ def main():
                 'latent_activations': ['linear'],
                 'decode_nb_hidden_units': [128],
                 'rnn_type': 'GRU',
-                'output_activation': {'name': 'axis_softmax' , 'params': {'axis': 2}}
+                'output_activation': {'name': 'axis_softmax' , 'params': {'axis': 'time_features'}}
              }
         },
         'data': {
