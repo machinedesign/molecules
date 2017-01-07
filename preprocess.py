@@ -25,7 +25,6 @@ def preprocess(filename,out, *, max_length=120, transformer=None):
             pickle.dump(tf, fd)
     
     hf = h5py.File(out, 'w')
-    hf.attrs['transformer'] = pickle.dumps(tf)
 
     shape = (len(data), max_length, tf._nb_words)
     dset = hf.create_dataset('X', shape)
