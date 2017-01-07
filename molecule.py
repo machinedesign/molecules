@@ -1,3 +1,7 @@
+"""
+this module provides utility functions related to molecules,
+including molecule descriptions.
+"""
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 

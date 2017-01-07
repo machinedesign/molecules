@@ -1,8 +1,14 @@
 from interface import train
+from interface import generate
+
+import numpy as np
+
 
 def main():
     params = {
         'family': 'autoencoder',
+        'input_col': 'X',
+        'output_col': 'X',
         'model': {
             'name': 'rnn_rnn_autoencoder',
             'params':{
@@ -17,11 +23,12 @@ def main():
         'data': {
             'train': {
                 'pipeline':[
-                    {"name": "load_hdf5", 
-                     "params": {"filename": "./data/zinc12_processed.h5", "cols": ["X"]}},
+                    {"name": "load_numpy", 
+                     "params": {"filename": "./data/zinc12.npz", "cols": ["X"], "nb": 100000}},
                 ]
             },
             'transformers':[
+                {'name': 'DocumentVectorizer', 'params': {'length': 120, 'onehot': True}}
             ]
         },
         'report':{
@@ -58,6 +65,34 @@ def main():
         },
     }
     train(params)
+    params = {
+        'model':{
+            'folder': 'out'
+        },
+        'method':{
+            'name': 'iterative_refinement',
+            'params': {
+                'batch_size': 128,
+                'nb_samples': 256,
+                'nb_iter': 5,
+                'binarize':{
+                    'name': 'none',
+                    'params': {
+                    }
+                },
+                'noise':{
+                    'name': 'none',
+                    'params': {}
+                },
+                'stop_if_unchanged': True,
+                'seed': 42
+            },
+            'save_folder': 'out/gen',
+        }
+    }
+    generate(params)
+    data = np.load('out/gen/generated.npz')
+    print(data['generated'])
 
 if __name__ == '__main__':
     main()
