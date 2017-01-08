@@ -37,7 +37,6 @@ def train_model():
                 'save_best_only': True
             },
             'metrics': ['shifted_categorical_crossentropy'],
-            'domain_specific': []
         },
         'optim':{
             'algo': {
