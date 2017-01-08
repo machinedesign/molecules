@@ -1,5 +1,4 @@
 import os
-import pickle
 import numpy as np
 
 from machinedesign.utils import mkdir_path
@@ -9,7 +8,6 @@ from machinedesign.autoencoder.interface import default_config
 from machinedesign.autoencoder.interface import load
 from machinedesign.autoencoder.interface import custom_objects
 
-from machinedesign.transformers import transform
 from machinedesign.transformers import onehot
 from machinedesign.data import intX
 
@@ -32,8 +30,10 @@ config = config._replace(transformers=transformers, objectives=objectives, metri
 
 custom_objects.update(objectives)
 
+
 def train(params):
     return _train(params, config=config)
+
 
 def generate(params):
     method = params['method']
@@ -42,6 +42,7 @@ def generate(params):
     model = load(folder, custom_objects=custom_objects)
     return _run_method(method, model)
 
+
 def _run_method(method, model):
     name = method['name']
     params = method['params']
@@ -49,15 +50,17 @@ def _run_method(method, model):
     func = get_method(name)
     return func(params, model, save_folder)
 
+
 def get_method(name):
     return {'greedy': _greedy}[name]
+
 
 def _greedy(params, model, folder):
     nb_samples = params['nb_samples']
     max_length = params['max_length']
     seed = params['seed']
     vectorizer = model.transformers[0]
-    
+
     def pred_func(x):
         x = onehot(x, D=vectorizer.nb_words_)
         y = model.predict(x)
@@ -65,20 +68,21 @@ def _greedy(params, model, folder):
         return y
 
     text = _generate_text_greedy(
-            pred_func, 
-            vectorizer, 
-            nb_samples=nb_samples, 
-            max_length=max_length,
-            method='proba',
-            random_state=seed)
+        pred_func,
+        vectorizer,
+        nb_samples=nb_samples,
+        max_length=max_length,
+        method='proba',
+        random_state=seed)
     mkdir_path(folder)
     with open(os.path.join(folder, 'generated.txt'), 'w') as fd:
         for doc in text:
             fd.write(doc + '\n')
     return text
 
-def _generate_text_greedy(pred_func, vectorizer, nb_samples=1, max_length=10, 
-                          cur=None,  method='argmax', temperature=1, 
+
+def _generate_text_greedy(pred_func, vectorizer, nb_samples=1, max_length=10,
+                          cur=None,  method='argmax', temperature=1,
                           apply_softmax=False, random_state=None):
     """
 
@@ -99,7 +103,7 @@ def _generate_text_greedy(pred_func, vectorizer, nb_samples=1, max_length=10,
 
     max_length : int
         number of characters to generate
-    
+
     method : str
         way to generate samples, can be either 'proba' or 'argmax'.
         If 'argmax', the generation is deterministic, each timestep we take the word
@@ -114,7 +118,7 @@ def _generate_text_greedy(pred_func, vectorizer, nb_samples=1, max_length=10,
         distribution uniform. temperature==1 has no effect,
         In case temperature is used (that is, different than 1), pred_func should return
         the pre-softmax activations of the neural net.
-    
+
     apply_softmax : bool
         whether to apply softmax to the values returned by pred_func.
         if temperature != 1, then apply_softmax should be True and pred_func must
@@ -135,7 +139,6 @@ def _generate_text_greedy(pred_func, vectorizer, nb_samples=1, max_length=10,
         assert apply_softmax
 
     rng = np.random.RandomState(random_state)
-    nb_words = vectorizer.nb_words_
     if cur is None:
         # initialize the 'seed' with random words
         shape = (nb_samples, vectorizer.length + max_length)
@@ -152,7 +155,7 @@ def _generate_text_greedy(pred_func, vectorizer, nb_samples=1, max_length=10,
         pr = pred_func(gen[:, i - start:i])
         if apply_softmax:
             pr = pr * temperature
-            pr = softmax(pr)
+            pr = _softmax(pr)
         next_gen = []
         for word_pr in pr:
             if method == 'argmax':
@@ -163,7 +166,13 @@ def _generate_text_greedy(pred_func, vectorizer, nb_samples=1, max_length=10,
         gen[:, i] = next_gen
     gen = gen[:, start:]
     gen = onehot(gen, D=vectorizer.nb_words_)
-    #WARNING : this assumes that vectorizer have onehot=True
+    # WARNING : this assumes that vectorizer have onehot=True
     # it will not work if onehot=Flase
     gen = vectorizer.inverse_transform(gen)
     return gen
+
+
+def _softmax(x, axis=-1):
+    e_x = np.exp(x - np.max(x, axis=axis, keepdims=True))
+    out = e_x / e_x.sum(axis=axis, keepdims=True)
+    return out

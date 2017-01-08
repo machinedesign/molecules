@@ -10,6 +10,8 @@ from machinedesign.utils import write_csv
 import molecule
 
 max_length = 64
+
+
 def train_model():
     params = {
         'family': 'autoencoder',
@@ -17,33 +19,33 @@ def train_model():
         'output_col': 'X',
         'model': {
             'name': 'rnn',
-            'params':{
+            'params': {
                 'nb_hidden_units': [512, 512],
                 'rnn_type': 'GRU',
-                'output_activation': {'name': 'axis_softmax' , 'params': {'axis': 'time_features'}}
-             }
+                'output_activation': {'name': 'axis_softmax', 'params': {'axis': 'time_features'}}
+            }
         },
         'data': {
             'train': {
-                'pipeline':[
-                    {"name": "load_numpy", 
-                     "params": {"filename": "./data/zinc12.npz", 
-                                 "cols": ["X"], 
-                                 "nb": 100000, 
-                                 "shuffle": True}},
+                'pipeline': [
+                    {"name": "load_numpy",
+                     "params": {"filename": "./data/zinc12.npz",
+                                "cols": ["X"],
+                                "nb": 100000,
+                                "shuffle": True}},
                 ]
             },
-            'transformers':[
-                {'name': 'DocumentVectorizer', 
+            'transformers': [
+                {'name': 'DocumentVectorizer',
                  'params': {
-                    'length': max_length, 
-                    'onehot': True, 
-                    'begin_character': True,
-                    'end_character': True}
-                }
+                     'length': max_length,
+                     'onehot': True,
+                     'begin_character': True,
+                     'end_character': True}
+                 }
             ]
         },
-        'report':{
+        'report': {
             'outdir': 'out',
             'checkpoint': {
                 'loss': 'train_shifted_categorical_crossentropy',
@@ -51,16 +53,16 @@ def train_model():
             },
             'metrics': ['shifted_categorical_crossentropy'],
         },
-        'optim':{
+        'optim': {
             'algo': {
                 'name': 'adam',
                 'params': {'lr': 1e-4}
             },
-            'lr_schedule':{
+            'lr_schedule': {
                 'name': 'constant',
                 'params': {}
             },
-            'early_stopping':{
+            'early_stopping': {
                 'name': 'none',
                 'params': {
                     'patience_loss': 'shifted_categorical_crossentropy',
@@ -77,6 +79,7 @@ def train_model():
     }
     train(params)
 
+
 def gen():
 
     data = np.load('data/zinc12.npz')
@@ -89,10 +92,10 @@ def gen():
     print(logp.min(), logp.max(), logp.mean(), logp.std())
     X = set(X)
     params = {
-        'model':{
+        'model': {
             'folder': 'out'
         },
-        'method':{
+        'method': {
             'name': 'greedy',
             'params': {
                 'nb_samples': 1000,
