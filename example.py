@@ -41,7 +41,7 @@ def train_model():
         'optim':{
             'algo': {
                 'name': 'adam',
-                'params': {'lr': 1e-3}
+                'params': {'lr': 1e-4}
             },
             'lr_schedule':{
                 'name': 'constant',
@@ -72,7 +72,7 @@ def gen():
         'method':{
             'name': 'greedy',
             'params': {
-                'nb_samples': 1000,
+                'nb_samples': 100,
                 'max_length': 120
             },
             'save_folder': 'out/gen',

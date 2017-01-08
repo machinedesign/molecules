@@ -69,7 +69,7 @@ def _greedy(params, model, folder):
             nb_samples=nb_samples, 
             max_length=max_length)
     mkdir_path(folder)
-    with open(os.path.join(folder, 'generated.txt')) as fd:
+    with open(os.path.join(folder, 'generated.txt'), 'w') as fd:
         for doc in text:
             fd.write(doc + '\n')
     return text
