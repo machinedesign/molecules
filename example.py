@@ -1,10 +1,12 @@
+from clize import run
+
 from interface import train
 from interface import generate
 
 import numpy as np
 
 
-def main():
+def train():
     params = {
         'family': 'autoencoder',
         'input_col': 'X',
@@ -65,6 +67,8 @@ def main():
         },
     }
     train(params)
+
+def gen():
     params = {
         'model':{
             'folder': 'out'
@@ -95,4 +99,4 @@ def main():
     print(data['generated'])
 
 if __name__ == '__main__':
-    main()
+    run(train, gen)

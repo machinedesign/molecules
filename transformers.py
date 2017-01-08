@@ -133,7 +133,7 @@ class DocumentVectorizer(object):
             X = X.argmax(axis=-1)
         docs = []
         for s in X:
-            docs.append([self._int2word[w] for w in s])
+            docs.append([self.int2word_[w] for w in s])
         if self._tokens_are_chars:
             docs = map(doc_to_str, docs)
         return docs
