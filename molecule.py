@@ -13,3 +13,11 @@ def canonical(s):
     mol = Chem.MolFromSmiles(s)
     s = Chem.MolFromSmiles(mol)
     return s
+
+def is_valid(s):
+    mol = Chem.MolFromSmiles(s)
+    return mol is not None
+
+def draw_image(s, filename):
+    mol = Chem.MolFromSmiles(s)
+    Chem.Draw.MolToFile(mol, filename)

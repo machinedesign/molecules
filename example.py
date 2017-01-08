@@ -6,18 +6,15 @@ from interface import generate
 import numpy as np
 
 
-def train():
+def train_model():
     params = {
         'family': 'autoencoder',
         'input_col': 'X',
         'output_col': 'X',
         'model': {
-            'name': 'rnn_rnn_autoencoder',
+            'name': 'rnn',
             'params':{
-                'encode_nb_hidden_units': [128],
-                'latent_nb_hidden_units': [32],
-                'latent_activations': ['linear'],
-                'decode_nb_hidden_units': [128],
+                'nb_hidden_units': [128],
                 'rnn_type': 'GRU',
                 'output_activation': {'name': 'axis_softmax' , 'params': {'axis': 'time_features'}}
              }
@@ -36,10 +33,10 @@ def train():
         'report':{
             'outdir': 'out',
             'checkpoint': {
-                'loss': 'train_categorical_crossentropy',
+                'loss': 'train_shifted_categorical_crossentropy',
                 'save_best_only': True
             },
-            'metrics': ['categorical_crossentropy'],
+            'metrics': ['shifted_categorical_crossentropy'],
             'domain_specific': []
         },
         'optim':{
@@ -54,14 +51,14 @@ def train():
             'early_stopping':{
                 'name': 'none',
                 'params': {
-                    'patience_loss': 'categorical_crossentropy',
+                    'patience_loss': 'shifted_categorical_crossentropy',
                     'patience': 5
                 }
             },
             'max_nb_epochs': 100,
             'batch_size': 128,
             'pred_batch_size': 128,
-            'loss': 'categorical_crossentropy',
+            'loss': 'shifted_categorical_crossentropy',
             'budget_secs': 86400,
             'seed': 42
         },
@@ -78,7 +75,7 @@ def gen():
             'params': {
                 'batch_size': 128,
                 'nb_samples': 256,
-                'nb_iter': 5,
+                'nb_iter': 1,
                 'binarize':{
                     'name': 'none',
                     'params': {
@@ -99,4 +96,4 @@ def gen():
     print(data['generated'])
 
 if __name__ == '__main__':
-    run(train, gen)
+    run(train_model, gen)

@@ -55,7 +55,10 @@ class DocumentVectorizer(object):
         # input_dtype_ is needed by machinedesign.autoencoder iterative_refinement
         # because the input array must be initialized there and the type of the 
         # data must be known, by default it is a float, whereas here we have strs.
-        self.input_dtype_ = 'str'
+        if length:
+            self.input_dtype_ = '<U'.format(length)
+        else:
+            self.input_dtype_ = 'str'
         self.input_shape_ = tuple([])
         # to know whether the documents is a list of str (tokens_are_chars is True) 
         # or list of list of str (tokens_are_chars is False)
@@ -135,12 +138,14 @@ class DocumentVectorizer(object):
         for s in X:
             docs.append([self.int2word_[w] for w in s])
         if self._tokens_are_chars:
-            docs = map(doc_to_str, docs)
+            docs = list(map(doc_to_str, docs))
         return docs
 
 def doc_to_str(doc):
-    idx = doc.index(END_CHARACTER)
-    if idx > 0:
+    try:
+        idx = doc.index(END_CHARACTER)
         doc = doc[0:idx]
-    doc = [doc for d in doc if d not in (BEGIN_CHARACTER, ZERO_CHARACTER)]
+    except ValueError:
+        pass
+    doc = [d for d in doc if d not in (BEGIN_CHARACTER, ZERO_CHARACTER, END_CHARACTER)]
     return ''.join(doc)
