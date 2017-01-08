@@ -5,8 +5,11 @@ import numpy as np
 from interface import train
 from interface import generate
 
+from machinedesign.utils import write_csv
+
 import molecule
 
+max_length = 64
 def train_model():
     params = {
         'family': 'autoencoder',
@@ -15,7 +18,7 @@ def train_model():
         'model': {
             'name': 'rnn',
             'params':{
-                'nb_hidden_units': [512],
+                'nb_hidden_units': [512, 512],
                 'rnn_type': 'GRU',
                 'output_activation': {'name': 'axis_softmax' , 'params': {'axis': 'time_features'}}
              }
@@ -24,11 +27,20 @@ def train_model():
             'train': {
                 'pipeline':[
                     {"name": "load_numpy", 
-                     "params": {"filename": "./data/zinc12.npz", "cols": ["X"], "nb": 100000}},
+                     "params": {"filename": "./data/zinc12.npz", 
+                                 "cols": ["X"], 
+                                 "nb": 100000, 
+                                 "shuffle": True}},
                 ]
             },
             'transformers':[
-                {'name': 'DocumentVectorizer', 'params': {'length': 120, 'onehot': True}}
+                {'name': 'DocumentVectorizer', 
+                 'params': {
+                    'length': max_length, 
+                    'onehot': True, 
+                    'begin_character': True,
+                    'end_character': True}
+                }
             ]
         },
         'report':{
@@ -69,8 +81,13 @@ def gen():
 
     data = np.load('data/zinc12.npz')
     X = data['X'][0:100000]
+    logp = X
+    logp = filter(molecule.is_valid, logp)
+    logp = map(molecule.logp, logp)
+    logp = list(logp)
+    logp = np.array(logp)
+    print(logp.min(), logp.max(), logp.mean(), logp.std())
     X = set(X)
-
     params = {
         'model':{
             'folder': 'out'
@@ -79,19 +96,26 @@ def gen():
             'name': 'greedy',
             'params': {
                 'nb_samples': 1000,
-                'max_length': 120 
+                'max_length': max_length,
+                'seed': 4332
             },
             'save_folder': 'out/gen',
         }
     }
     generate(params)
+    mols = []
     i = 0
     for doc in open('out/gen/generated.txt').readlines():
         s = doc[0:-1]
-        # if molecule is valid and not in training set
-        if molecule.is_valid(s) and s not in X:
-            print(s)
+        is_valid = molecule.is_valid(s)
+        is_in_train = s in X
+        logp = molecule.logp(s) if is_valid else 'none'
+        mols.append({'mol': s, 'is_valid': is_valid, 'is_in_train': is_in_train, 'logp': logp})
+        if is_valid and not is_in_train and len(s):
             molecule.draw_image(s, 'out/gen/{:05d}.png'.format(i))
             i += 1
+    write_csv(mols, 'out/gen/mols.csv')
+
+
 if __name__ == '__main__':
     run(train_model, gen)

@@ -55,8 +55,9 @@ def get_method(name):
 def _greedy(params, model, folder):
     nb_samples = params['nb_samples']
     max_length = params['max_length']
+    seed = params['seed']
     vectorizer = model.transformers[0]
-
+    
     def pred_func(x):
         x = onehot(x, D=vectorizer.nb_words_)
         y = model.predict(x)
@@ -68,7 +69,8 @@ def _greedy(params, model, folder):
             vectorizer, 
             nb_samples=nb_samples, 
             max_length=max_length,
-            method='proba')
+            method='proba',
+            random_state=seed)
     mkdir_path(folder)
     with open(os.path.join(folder, 'generated.txt'), 'w') as fd:
         for doc in text:

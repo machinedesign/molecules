@@ -58,7 +58,9 @@ class DocumentVectorizer(object):
         if length:
             self.input_dtype_ = '<U{}'.format(length)
         else:
-            self.input_dtype_ = 'str'
+            # if length is not specified, make a 1000 limit to strs
+            self.input_dtype_ = '<U1000'
+        # input shape is a scalar (str scalar)
         self.input_shape_ = tuple([])
         # to know whether the documents is a list of str (tokens_are_chars is True) 
         # or list of list of str (tokens_are_chars is False)
@@ -142,6 +144,7 @@ class DocumentVectorizer(object):
         return docs
 
 def doc_to_str(doc):
+    print(doc)
     try:
         idx = doc.index(END_CHARACTER)
         doc = doc[0:idx]

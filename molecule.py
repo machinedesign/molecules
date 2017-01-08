@@ -12,7 +12,7 @@ def logp(s):
 
 def canonical(s):
     mol = Chem.MolFromSmiles(s)
-    s = Chem.MolFromSmiles(mol)
+    s = Chem.MolToSmiles(mol)
     return s
 
 def is_valid(s):
