@@ -1,10 +1,11 @@
 from clize import run
 
+import numpy as np
+
 from interface import train
 from interface import generate
 
-import numpy as np
-
+import molecule
 
 def train_model():
     params = {
@@ -65,6 +66,11 @@ def train_model():
     train(params)
 
 def gen():
+
+    data = np.load('data/zinc12.npz')
+    X = data['X'][0:100000]
+    X = set(X)
+
     params = {
         'model':{
             'folder': 'out'
@@ -72,13 +78,20 @@ def gen():
         'method':{
             'name': 'greedy',
             'params': {
-                'nb_samples': 100,
-                'max_length': 120
+                'nb_samples': 1000,
+                'max_length': 120 
             },
             'save_folder': 'out/gen',
         }
     }
     generate(params)
-
+    i = 0
+    for doc in open('out/gen/generated.txt').readlines():
+        s = doc[0:-1]
+        # if molecule is valid and not in training set
+        if molecule.is_valid(s) and s not in X:
+            print(s)
+            molecule.draw_image(s, 'out/gen/{:05d}.png'.format(i))
+            i += 1
 if __name__ == '__main__':
     run(train_model, gen)

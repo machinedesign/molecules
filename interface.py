@@ -67,7 +67,8 @@ def _greedy(params, model, folder):
             pred_func, 
             vectorizer, 
             nb_samples=nb_samples, 
-            max_length=max_length)
+            max_length=max_length,
+            method='proba')
     mkdir_path(folder)
     with open(os.path.join(folder, 'generated.txt'), 'w') as fd:
         for doc in text:

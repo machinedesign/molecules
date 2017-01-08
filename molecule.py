@@ -4,6 +4,7 @@ including molecule descriptions.
 """
 from rdkit import Chem
 from rdkit.Chem import Descriptors
+from rdkit.Chem import Draw
 
 def logp(s):
     mol = Chem.MolFromSmiles(s)
@@ -20,4 +21,4 @@ def is_valid(s):
 
 def draw_image(s, filename):
     mol = Chem.MolFromSmiles(s)
-    Chem.Draw.MolToFile(mol, filename)
+    Draw.MolToFile(mol, filename)
