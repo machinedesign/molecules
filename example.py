@@ -14,7 +14,7 @@ def train_model():
         'model': {
             'name': 'rnn',
             'params':{
-                'nb_hidden_units': [128],
+                'nb_hidden_units': [512],
                 'rnn_type': 'GRU',
                 'output_activation': {'name': 'axis_softmax' , 'params': {'axis': 'time_features'}}
              }
@@ -70,29 +70,15 @@ def gen():
             'folder': 'out'
         },
         'method':{
-            'name': 'iterative_refinement',
+            'name': 'greedy',
             'params': {
-                'batch_size': 128,
-                'nb_samples': 256,
-                'nb_iter': 1,
-                'binarize':{
-                    'name': 'none',
-                    'params': {
-                    }
-                },
-                'noise':{
-                    'name': 'none',
-                    'params': {}
-                },
-                'stop_if_unchanged': True,
-                'seed': 42
+                'nb_samples': 1000,
+                'max_length': 120
             },
             'save_folder': 'out/gen',
         }
     }
     generate(params)
-    data = np.load('out/gen/generated.npz')
-    print(data['generated'])
 
 if __name__ == '__main__':
     run(train_model, gen)

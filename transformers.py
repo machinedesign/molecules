@@ -56,7 +56,7 @@ class DocumentVectorizer(object):
         # because the input array must be initialized there and the type of the 
         # data must be known, by default it is a float, whereas here we have strs.
         if length:
-            self.input_dtype_ = '<U'.format(length)
+            self.input_dtype_ = '<U{}'.format(length)
         else:
             self.input_dtype_ = 'str'
         self.input_shape_ = tuple([])
