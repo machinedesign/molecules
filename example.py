@@ -9,9 +9,7 @@ from machinedesign.utils import write_csv
 
 import molecule
 
-max_length = 64
-
-
+max_length = 74
 def train_model():
     params = {
         'family': 'autoencoder',
