@@ -107,7 +107,7 @@ class DocumentVectorizer(object):
             if self.begin_character:
                 len_doc -= 1
             if self.end_character:
-                len_doc = - 1
+                len_doc -= 1
             doc_new = []
             if self.begin_character:
                 doc_new.append(self._word_transform(BEGIN_CHARACTER))
@@ -147,7 +147,6 @@ class DocumentVectorizer(object):
 
 
 def doc_to_str(doc):
-    print(doc)
     try:
         idx = doc.index(END_CHARACTER)
         doc = doc[0:idx]

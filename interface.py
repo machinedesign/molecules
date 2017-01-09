@@ -13,6 +13,7 @@ from machinedesign.data import intX
 
 from transformers import DocumentVectorizer
 from transformers import BEGIN_CHARACTER
+from transformers import ZERO_CHARACTER
 
 from objectives import shifted_categorical_crossentropy
 from objectives import shifted_categorical_crossentropy_metric
@@ -61,17 +62,16 @@ def _greedy(params, model, folder):
     seed = params['seed']
     vectorizer = model.transformers[0]
 
-    def pred_func(x):
+    def pred_func(x, t):
         x = onehot(x, D=vectorizer.nb_words_)
         y = model.predict(x)
-        y = y[:, -1, :]
+        y = y[:, t, :]
         return y
 
     text = _generate_text_greedy(
         pred_func,
         vectorizer,
         nb_samples=nb_samples,
-        max_length=max_length,
         method='proba',
         random_state=seed)
     mkdir_path(folder)
@@ -81,28 +81,25 @@ def _greedy(params, model, folder):
     return text
 
 
-def _generate_text_greedy(pred_func, vectorizer, nb_samples=1, max_length=10,
-                          cur=None,  method='argmax', temperature=1,
-                          apply_softmax=False, random_state=None):
+def _generate_text_greedy(pred_func, vectorizer, nb_samples=1,
+                          method='argmax', temperature=1, 
+                          apply_softmax=False, 
+                          random_state=None):
     """
-
     pred_func : function
-        function which predicts the next character based on a the first characters.
-        It takes (nb_samples, nb_timesteps) as input and returns (nb_samples, nb_words) as output.
-        For each example it returns a score for each word in the vocabulary.
+        function which predicts the next character based on the first characters.
+        It takes two arguments, the current generated text, represented as an int numpy
+        array of shape (nb_samples, max_length), and the current timestep t.
+        it returns a numpy array of shape (nb_samples, nb_words).
+        For each example it returns a score for each word in the vocabulary
+        representing the probability distribution of the next word at timestep t+1 for each
+        sample.
 
     vectorizer : DocumentVectorizer
         a DocumentVectorizer instance to convert back to strings
 
-    cur : str
-        cur text to condition on (text seed), otherwise initialized by the begin character.
-        the shape of cur should be (nb_samples, nb_initial_timesteps)
-
     nb_samples : int
         number of samples to generate (conditioned on the same seed defined by 'cur')
-
-    max_length : int
-        number of characters to generate
 
     method : str
         way to generate samples, can be either 'proba' or 'argmax'.
@@ -122,7 +119,7 @@ def _generate_text_greedy(pred_func, vectorizer, nb_samples=1, max_length=10,
     apply_softmax : bool
         whether to apply softmax to the values returned by pred_func.
         if temperature != 1, then apply_softmax should be True and pred_func must
-        return pre-softmx activations.
+        return pre-softmax activations.
 
     random_state : int or None
         random state to use for generation.
@@ -137,37 +134,28 @@ def _generate_text_greedy(pred_func, vectorizer, nb_samples=1, max_length=10,
     assert method in ('proba', 'argmax')
     if temperature != 1:
         assert apply_softmax
-
     rng = np.random.RandomState(random_state)
-    if cur is None:
-        # initialize the 'seed' with random words
-        shape = (nb_samples, vectorizer.length + max_length)
-        gen = np.ones(shape) * BEGIN_CHARACTER
-        start = vectorizer.length
-    else:
-        # initialize the seed by cur
-        assert len(cur) == nb_samples
-        gen = np.ones((len(cur), cur.shape[1] + max_length))
-        start = cur.shape[1]
-        gen[:, 0:start] = cur
+    # initialize the strings with the begin character
+    shape = (nb_samples, vectorizer.length)
+    gen = np.ones(shape) * ZERO_CHARACTER
+    gen[:, 0] = BEGIN_CHARACTER
     gen = intX(gen)
-    for i in range(start, start + max_length):
-        pr = pred_func(gen[:, i - start:i])
+    for i in range(1, vectorizer.length):
+        pr = pred_func(gen, i - 1)
         if apply_softmax:
             pr = pr * temperature
             pr = _softmax(pr)
         next_gen = []
         for word_pr in pr:
             if method == 'argmax':
-                word_idx = word_pr.argmax()  # only take argmax
+                word_idx = word_pr.argmax()
             elif method == 'proba':
                 word_idx = rng.choice(np.arange(len(word_pr)), p=word_pr)
             next_gen.append(word_idx)
         gen[:, i] = next_gen
-    gen = gen[:, start:]
     gen = onehot(gen, D=vectorizer.nb_words_)
     # WARNING : this assumes that vectorizer have onehot=True
-    # it will not work if onehot=Flase
+    # it will not work if onehot=Flase in the vectorizer
     gen = vectorizer.inverse_transform(gen)
     return gen
 

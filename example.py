@@ -2,14 +2,13 @@ from clize import run
 
 import numpy as np
 
-from interface import train
-from interface import generate
-
 from machinedesign.utils import write_csv
 
 import molecule
+from interface import train
+from interface import generate
 
-max_length = 74
+max_length = 73
 def train_model():
     params = {
         'family': 'autoencoder',
@@ -29,8 +28,7 @@ def train_model():
                     {"name": "load_numpy",
                      "params": {"filename": "./data/zinc12.npz",
                                 "cols": ["X"],
-                                "nb": 100000,
-                                "shuffle": True}},
+                                "nb": 100000}},
                 ]
             },
             'transformers': [
@@ -54,7 +52,7 @@ def train_model():
         'optim': {
             'algo': {
                 'name': 'adam',
-                'params': {'lr': 1e-4}
+                'params': {'lr': 1e-3}
             },
             'lr_schedule': {
                 'name': 'constant',
@@ -79,7 +77,6 @@ def train_model():
 
 
 def gen():
-
     data = np.load('data/zinc12.npz')
     X = data['X'][0:100000]
     logp = X
