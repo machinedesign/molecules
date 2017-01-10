@@ -1,12 +1,11 @@
-from clize import run
-
 import numpy as np
+from clize import run
 
 from machinedesign.utils import write_csv
 
-import molecule
-from interface import train
-from interface import generate
+from molecules import molecule
+from molecules.interface import train
+from molecules.interface import generate
 
 max_length = 73
 def train_model():
@@ -18,7 +17,7 @@ def train_model():
             'name': 'rnn',
             'params': {
                 'nb_hidden_units': [512, 512],
-                'rnn_type': 'GRU',
+                'rnn_type': 'LSTM',
                 'output_activation': {'name': 'axis_softmax', 'params': {'axis': 'time_features'}}
             }
         },
@@ -52,7 +51,7 @@ def train_model():
         'optim': {
             'algo': {
                 'name': 'adam',
-                'params': {'lr': 1e-3}
+                'params': {'lr': 1e-4}
             },
             'lr_schedule': {
                 'name': 'constant',
@@ -66,7 +65,7 @@ def train_model():
                 }
             },
             'max_nb_epochs': 100,
-            'batch_size': 128,
+            'batch_size': 32,
             'pred_batch_size': 128,
             'loss': 'shifted_categorical_crossentropy',
             'budget_secs': 86400,
@@ -84,7 +83,6 @@ def gen():
     logp = map(molecule.logp, logp)
     logp = list(logp)
     logp = np.array(logp)
-    print(logp.min(), logp.max(), logp.mean(), logp.std())
     X = set(X)
     params = {
         'model': {
