@@ -7,6 +7,8 @@ from molecules import molecule
 from molecules.interface import train
 from molecules.interface import generate
 
+from molecules import transformers
+
 max_length = 73
 def train_model():
     params = {

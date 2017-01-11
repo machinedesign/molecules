@@ -11,12 +11,12 @@ from machinedesign.autoencoder.interface import custom_objects
 from machinedesign.transformers import onehot
 from machinedesign.data import intX
 
-from transformers import DocumentVectorizer
-from transformers import BEGIN_CHARACTER
-from transformers import ZERO_CHARACTER
-
-from objectives import shifted_categorical_crossentropy
-from objectives import shifted_categorical_crossentropy_metric
+from .transformers import DocumentVectorizer
+from .transformers import BEGIN_CHARACTER
+from .transformers import ZERO_CHARACTER
+from . import transformers
+from .objectives import shifted_categorical_crossentropy
+from .objectives import shifted_categorical_crossentropy_metric
 
 config = default_config
 transformers = config.transformers.copy()
