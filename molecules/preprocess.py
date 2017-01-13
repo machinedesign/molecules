@@ -13,6 +13,7 @@ def preprocess(filename, out, *, max_length=120):
     max_length = int(max_length)
     data = pd.read_hdf(filename, 'table')
     data = data['structure']
+    print(data.shape)
     data = data.values
     data = data.tolist()
     data = filter(lambda s: len(s) <= max_length, data)

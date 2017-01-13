@@ -107,7 +107,9 @@ class DocumentVectorizer(object):
     def _doc_transform(self, doc):
         doc = list(map(self._word_transform, doc))
         if self.length:
-            len_doc = min(len(doc), self.length)  # max possible length is self.length
+            len_doc = min(
+                len(doc) + self.begin_character + self.end_character, 
+                self.length)  # max possible length is self.length
             if self.begin_character:
                 len_doc -= 1
             if self.end_character:

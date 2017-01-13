@@ -17,6 +17,8 @@ from .transformers import ZERO_CHARACTER
 from . import transformers
 from .objectives import shifted_categorical_crossentropy
 from .objectives import shifted_categorical_crossentropy_metric
+from .objectives import shifted_precision_metric
+from .objectives import precision_metric
 
 config = default_config
 transformers = config.transformers.copy()
@@ -27,6 +29,8 @@ objectives['shifted_categorical_crossentropy'] = shifted_categorical_crossentrop
 
 metrics = config.metrics.copy()
 metrics['shifted_categorical_crossentropy'] = shifted_categorical_crossentropy_metric
+metrics['precision_metric'] = precision_metric
+metrics['shifted_precision_metric'] = shifted_precision_metric
 config = config._replace(transformers=transformers, objectives=objectives, metrics=metrics)
 
 custom_objects.update(objectives)

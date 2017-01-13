@@ -19,9 +19,10 @@ def train_model():
         'model': {
             'name': 'rnn',
             'params': {
-                'nb_hidden_units': [1024, 1024],
+                'nb_hidden_units': [64, 64],
                 'rnn_type': 'LSTM',
-                'output_activation': {'name': 'axis_softmax', 'params': {'axis': 'time_features'}}
+                'output_activation': {'name': 'axis_softmax', 'params': {'axis': 'time_features'}},
+                'stateful': False
             }
         },
         'data': {
@@ -30,9 +31,20 @@ def train_model():
                     {"name": "load_numpy",
                      "params": {"filename": "./data/zinc12.npz",
                                 "cols": ["X"],
-                                "nb": 100000}},
+                                "nb": 10000}},
                 ]
             },
+
+            'valid': {
+                'pipeline': [
+                    {"name": "load_numpy",
+                     "params": {"filename": "./data/zinc12.npz",
+                                "cols": ["X"],
+                                "start": 10000,
+                                "nb": 1000}},
+                ]
+            },
+
             'transformers': [
                 {'name': 'DocumentVectorizer',
                  'params': {
@@ -49,12 +61,12 @@ def train_model():
                 'loss': 'train_shifted_categorical_crossentropy',
                 'save_best_only': False
             },
-            'metrics': ['shifted_categorical_crossentropy'],
+            'metrics': ['shifted_precision_metric', 'shifted_categorical_crossentropy'],
         },
         'optim': {
             'algo': {
                 'name': 'adam',
-                'params': {'lr': 1e-3, 'clipnorm': 1.}
+                'params': {'lr': 1e-3}
             },
             'lr_schedule': {
                 'name': 'decrease_when_stop_improving',
@@ -71,7 +83,7 @@ def train_model():
                     'patience': 10
                 }
             },
-            'max_nb_epochs': 100,
+            'max_nb_epochs': 1000,
             'batch_size': 128,
             'pred_batch_size': 128,
             'loss': 'shifted_categorical_crossentropy',

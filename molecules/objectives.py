@@ -36,3 +36,25 @@ def _masked_categorical_crossentropy(y_true, y_pred, backend=K):
     L = L.reshape((E, T))
     L = (L * mask) / mask.sum(axis=1, keepdims=True)
     return L
+
+def precision_metric(y_true, y_pred):
+    y_true = y_true.reshape((-1, y_true.shape[-1]))
+    y_pred = y_pred.reshape((-1, y_pred.shape[-1]))
+    y_true = y_true.argmax(axis=1)
+    y_pred = y_pred.argmax(axis=1)
+    return (y_true == y_pred).mean()
+
+def shifted_precision_metric(y_true, y_pred, masked=True):
+    y_true = y_true[:, 1:, :]
+    y_pred = y_pred[:, 0:-1, :]
+    return masked_precision_metric(y_true, y_pred) 
+
+def masked_precision_metric(y_true, y_pred):
+    y_true = y_true.reshape((-1, y_true.shape[-1]))
+    y_pred = y_pred.reshape((-1, y_pred.shape[-1]))
+    y_true = y_true.argmax(axis=1)
+    y_pred = y_pred.argmax(axis=1)
+    non_zero = (y_true != 0)
+    y_true = y_true[non_zero]
+    y_pred = y_pred[non_zero]
+    return (y_true == y_pred)
