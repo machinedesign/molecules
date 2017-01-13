@@ -5,7 +5,7 @@ from machinedesign.utils import mkdir_path
 
 from machinedesign.autoencoder.interface import train as _train
 from machinedesign.autoencoder.interface import default_config
-from machinedesign.autoencoder.interface import load
+from machinedesign.autoencoder.interface import load as load_
 from machinedesign.autoencoder.interface import custom_objects
 
 from machinedesign.transformers import onehot
@@ -40,9 +40,11 @@ def generate(params):
     method = params['method']
     model_params = params['model']
     folder = model_params['folder']
-    model = load(folder, custom_objects=custom_objects)
+    model = load(folder)
     return _run_method(method, model)
 
+def load(folder, custom_objects=custom_objects):
+    return load_(folder, custom_objects=custom_objects)
 
 def _run_method(method, model):
     name = method['name']

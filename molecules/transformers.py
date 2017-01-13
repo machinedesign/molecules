@@ -72,7 +72,11 @@ class DocumentVectorizer(object):
         self.word2int_ = {}
         self.int2word_ = {}
         self.nb_words_ = 0
-        self._update(set([ZERO_CHARACTER, BEGIN_CHARACTER, END_CHARACTER]))
+        #ensure that the ZERO_CHARACTER takes the index 0
+        # in the vectorized representation
+        self._update(set([ZERO_CHARACTER]))
+        self._update(set([BEGIN_CHARACTER]))
+        self._update(set([END_CHARACTER]))
 
     def partial_fit(self, docs):
         # if not set, set _tokens_are_chars
