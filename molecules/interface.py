@@ -27,9 +27,10 @@ custom_objects.update(objectives)
 metrics = config.metrics.copy()
 metrics.update(custom_metrics)
 config = config._replace(
-    transformers=transformers, 
-    objectives=objectives, 
+    transformers=transformers,
+    objectives=objectives,
     metrics=metrics)
+
 
 def train(params):
     return _train(params, config=config)
@@ -38,6 +39,7 @@ def train(params):
 def load(folder, custom_objects=custom_objects):
     return load_(folder, custom_objects=custom_objects)
 
+
 def generate(params):
     method = params['method']
     model_params = params['model']
@@ -45,12 +47,13 @@ def generate(params):
     model = load(folder)
     return _run_method(method, model)
 
+
 def _run_method(method, model):
     name = method['name']
     params = method['params']
     save_folder = method['save_folder']
     func = _get_method(name)
-    text = func(params, model, save)
+    text = func(params, model)
     mkdir_path(save_folder)
     with open(os.path.join(save_folder, 'generated.txt'), 'w') as fd:
         for doc in text:
@@ -64,7 +67,6 @@ def _get_method(name):
 
 def _greedy(params, model):
     nb_samples = params['nb_samples']
-    max_length = params['max_length']
     seed = params['seed']
     vectorizer = model.transformers[0]
 
@@ -82,9 +84,10 @@ def _greedy(params, model):
         random_state=seed)
     return text
 
+
 def _generate_text_greedy(pred_func, vectorizer, nb_samples=1,
-                          method='argmax', temperature=1, 
-                          apply_softmax=False, 
+                          method='argmax', temperature=1,
+                          apply_softmax=False,
                           random_state=None):
     """
     pred_func : function
