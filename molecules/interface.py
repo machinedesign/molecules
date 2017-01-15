@@ -14,31 +14,29 @@ from machinedesign.data import intX
 from .transformers import DocumentVectorizer
 from .transformers import BEGIN_CHARACTER
 from .transformers import ZERO_CHARACTER
-from . import transformers
-from .objectives import shifted_categorical_crossentropy
-from .objectives import shifted_categorical_crossentropy_metric
-from .objectives import shifted_precision_metric
-from .objectives import precision_metric
+
+from .objectives import objectives as custom_objectives
+from .objectives import metrics as custom_metrics
 
 config = default_config
 transformers = config.transformers.copy()
 transformers['DocumentVectorizer'] = DocumentVectorizer
-
 objectives = config.objectives.copy()
-objectives['shifted_categorical_crossentropy'] = shifted_categorical_crossentropy
-
-metrics = config.metrics.copy()
-metrics['shifted_categorical_crossentropy'] = shifted_categorical_crossentropy_metric
-metrics['precision_metric'] = precision_metric
-metrics['shifted_precision_metric'] = shifted_precision_metric
-config = config._replace(transformers=transformers, objectives=objectives, metrics=metrics)
-
+objectives.update(custom_objectives)
 custom_objects.update(objectives)
-
+metrics = config.metrics.copy()
+metrics.update(custom_metrics)
+config = config._replace(
+    transformers=transformers, 
+    objectives=objectives, 
+    metrics=metrics)
 
 def train(params):
     return _train(params, config=config)
 
+
+def load(folder, custom_objects=custom_objects):
+    return load_(folder, custom_objects=custom_objects)
 
 def generate(params):
     method = params['method']
@@ -47,22 +45,24 @@ def generate(params):
     model = load(folder)
     return _run_method(method, model)
 
-def load(folder, custom_objects=custom_objects):
-    return load_(folder, custom_objects=custom_objects)
-
 def _run_method(method, model):
     name = method['name']
     params = method['params']
     save_folder = method['save_folder']
-    func = get_method(name)
-    return func(params, model, save_folder)
+    func = _get_method(name)
+    text = func(params, model, save)
+    mkdir_path(save_folder)
+    with open(os.path.join(save_folder, 'generated.txt'), 'w') as fd:
+        for doc in text:
+            fd.write(doc + '\n')
+    return text
 
 
-def get_method(name):
+def _get_method(name):
     return {'greedy': _greedy}[name]
 
 
-def _greedy(params, model, folder):
+def _greedy(params, model):
     nb_samples = params['nb_samples']
     max_length = params['max_length']
     seed = params['seed']
@@ -80,12 +80,7 @@ def _greedy(params, model, folder):
         nb_samples=nb_samples,
         method='proba',
         random_state=seed)
-    mkdir_path(folder)
-    with open(os.path.join(folder, 'generated.txt'), 'w') as fd:
-        for doc in text:
-            fd.write(doc + '\n')
     return text
-
 
 def _generate_text_greedy(pred_func, vectorizer, nb_samples=1,
                           method='argmax', temperature=1, 

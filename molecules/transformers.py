@@ -1,3 +1,8 @@
+"""
+this module provides DocumentVectorizer, a preprocessor
+that takes a list of documents and returns a vectorized
+representation of the documents.
+"""
 import six
 from six.moves import map
 import numpy as np
@@ -16,7 +21,7 @@ class DocumentVectorizer(object):
     representation of the documents.
 
     documents are either list of str or list of list of str.
-    - if the documents is a list of str, then each document is a str so
+    - if the documents are a list of str, then each document is a str so
       the tokens are the individual characters
     - if the documents is a list of list of str, then the tokens are
       the elements of the list (words)
@@ -41,7 +46,9 @@ class DocumentVectorizer(object):
 
     onehot : bool
         whether to convert the documents into onehot representation when
-        calling the method transform.
+        calling the method transform. this also means that when calling
+        inverse_transform, it expects the the documents to be represented
+        as onehot, to give back the strings as a result.
 
     """
 
@@ -73,7 +80,8 @@ class DocumentVectorizer(object):
         self.int2word_ = {}
         self.nb_words_ = 0
         #ensure that the ZERO_CHARACTER takes the index 0
-        # in the vectorized representation
+        # in the vectorized representation by appending it
+        # first to the vocabulary.
         self._update(set([ZERO_CHARACTER]))
         self._update(set([BEGIN_CHARACTER]))
         self._update(set([END_CHARACTER]))
@@ -153,10 +161,14 @@ class DocumentVectorizer(object):
 
 
 def doc_to_str(doc):
+    # find the end character and truncate
     try:
         idx = doc.index(END_CHARACTER)
         doc = doc[0:idx]
     except ValueError:
+        # if end character does not exist, do not do anything
+        # and take the whole thing as a result.
         pass
+    # after removing the end character, remove the zero and begin character
     doc = [d for d in doc if d not in (BEGIN_CHARACTER, ZERO_CHARACTER, END_CHARACTER)]
     return ''.join(doc)
