@@ -19,7 +19,7 @@ def train_model():
         'model': {
             'name': 'rnn',
             'params': {
-                'nb_hidden_units': [64, 64],
+                'nb_hidden_units': [256, 256],
                 'rnn_type': 'LSTM',
                 'output_activation': {'name': 'axis_softmax', 'params': {'axis': 'time_features'}},
                 'stateful': False
@@ -44,7 +44,6 @@ def train_model():
                                 "nb": 1000}},
                 ]
             },
-
             'transformers': [
                 {'name': 'DocumentVectorizer',
                  'params': {

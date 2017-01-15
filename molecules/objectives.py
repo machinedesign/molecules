@@ -62,7 +62,7 @@ def precision_metric(y_true, y_pred):
     y_pred = y_pred.reshape((-1, y_pred.shape[-1]))
     y_true = y_true.argmax(axis=1)
     y_pred = y_pred.argmax(axis=1)
-    return (y_true == y_pred).mean()
+    return (y_true == y_pred)
 
 def shifted_precision_metric(y_true, y_pred, masked=True):
     """
