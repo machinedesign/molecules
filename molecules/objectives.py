@@ -1,33 +1,26 @@
 import numpy as np
 import keras.backend as K
 
-from machinedesign.objectives import categorical_crossentropy
-from machinedesign.metrics import categorical_crossentropy as categorical_crossentropy_metric
+from machinedesign.objectives import categorical_crossentropy as _categorical_crossentropy
+from machinedesign.metrics import categorical_crossentropy as _categorical_crossentropy_metric
 
-def shifted_categorical_crossentropy(y_true, y_pred, masked=True):
-    """
-    y_pred should be close to y_true shifted to the right by one character,
-    metric version. this function computes a masked version if masked is True. 
-    the masked version ignores the zero character, that is, it ignores all timesteps
-    where the the character to predict is the zero character.
-    """
-    y_true = y_true[:, 1:, :]
-    y_pred = y_pred[:, 0:-1, :]
+def categorical_crossentropy(y_true, y_pred, masked=False, shifted=False):
+    if shifted:    
+        y_true = y_true[:, 1:, :]
+        y_pred = y_pred[:, 0:-1, :]
     if masked:
         return _masked_categorical_crossentropy(y_true, y_pred, backend=K).mean()
     else:
-        return categorical_crossentropy(y_true, y_pred)
+        return _categorical_crossentropy(y_true, y_pred)
 
-def shifted_categorical_crossentropy_metric(y_true, y_pred, masked=True):
-    """
-    metric version of shifted_categorical_crossentropy
-    """
-    y_true = y_true[:, 1:, :]
-    y_pred = y_pred[:, 0:-1, :]
+def categorical_crossentropy_metric(y_true, y_pred, masked=False, shifted=False):
+    if shifted:    
+        y_true = y_true[:, 1:, :]
+        y_pred = y_pred[:, 0:-1, :]
     if masked:
         return _masked_categorical_crossentropy(y_true, y_pred, backend=np)
     else:
-        return categorical_crossentropy_metric(y_true, y_pred)
+        return _categorical_crossentropy_metric(y_true, y_pred)
 
 def _masked_categorical_crossentropy(y_true, y_pred, backend=K):
     """
@@ -52,28 +45,23 @@ def _masked_categorical_crossentropy(y_true, y_pred, backend=K):
     L = (L * mask) / mask.sum(axis=1, keepdims=True)
     return L
 
-def precision_metric(y_true, y_pred):
+def precision_metric(y_true, y_pred, shifted=False, masked=False):
     """
     computes how much the argmax character of y_true and the argmax
     character of y_pred match with each other. the value is  between 0 and 1
     where 1 is the best value, 0 the worst.
     """
-    y_true = y_true.reshape((-1, y_true.shape[-1]))
-    y_pred = y_pred.reshape((-1, y_pred.shape[-1]))
-    y_true = y_true.argmax(axis=1)
-    y_pred = y_pred.argmax(axis=1)
-    return (y_true == y_pred)
-
-def shifted_precision_metric(y_true, y_pred, masked=True):
-    """
-    shifted version of precision_metric
-    """
-    y_true = y_true[:, 1:, :]
-    y_pred = y_pred[:, 0:-1, :]
+    if shifted:    
+        y_true = y_true[:, 1:, :]
+        y_pred = y_pred[:, 0:-1, :]
     if masked:
-        return _masked_precision_metric(y_true, y_pred) 
+        return _masked_precision_metric(y_true, y_pred)
     else:
-        return precision_metric(y_true, y_pred)
+        y_true = y_true.reshape((-1, y_true.shape[-1]))
+        y_pred = y_pred.reshape((-1, y_pred.shape[-1]))
+        y_true = y_true.argmax(axis=1)
+        y_pred = y_pred.argmax(axis=1)
+        return (y_true == y_pred)
 
 def _masked_precision_metric(y_true, y_pred):
     """
@@ -95,14 +83,12 @@ def _masked_precision_metric(y_true, y_pred):
     return (y_true == y_pred)
 
 objectives = {
-   'shifted_categorical_crossentropy': shifted_categorical_crossentropy
+   'categorical_crossentropy': categorical_crossentropy,
+#TODO remove, only there for compability with old models using that
+   'shifted_categorical_crossentropy': categorical_crossentropy
 }
 
 metrics = {
-    'shifted_categorical_crossentropy': shifted_categorical_crossentropy_metric,
+    'categorical_crossentropy': categorical_crossentropy_metric,
     'precision' : precision_metric,
-    'shifted_precision': shifted_precision_metric,
-#TODO remove, these are duplicates of the two previous ones
-    'precision_metric' : precision_metric,
-    'shifted_precision_metric': shifted_precision_metric
 }
