@@ -16,7 +16,7 @@ cd data/raw/zinc12
 bash get.sh
 ```
 
-This will creaate a file **data/raw/zinc12.csv**
+This will create a file **data/raw/zinc12.csv**
 
 The second step is to preprocess the data.
 The goal of preprocessing is to convert data to numpy format (but still strings),
@@ -33,6 +33,6 @@ Run example
 Once data/zinc12.npz has been created, the example can be run:
 
 ```bash
-    cd examples/
-    python example.py
+cd examples/
+python example.py
 ```
