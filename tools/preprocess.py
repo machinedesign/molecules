@@ -4,15 +4,15 @@ from six.moves import map
 import numpy as np
 import pandas as pd
 
-import molecule
+from molecules import molecule
 
 from clize import run
 
 
 def preprocess(filename, out, *, max_length=120):
     max_length = int(max_length)
-    data = pd.read_hdf(filename, 'table')
-    data = data['structure']
+    data = pd.read_csv(filename)
+    data = data['smiles']
     print(data.shape)
     data = data.values
     data = data.tolist()

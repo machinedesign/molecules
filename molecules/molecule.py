@@ -1,11 +1,11 @@
 """
 this module provides utility functions related to molecules,
-including molecule descriptions.
+including molecule descriptors.
 """
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 from rdkit.Chem import Draw
-
+from .sascorer import calculateScore
 
 def logp(s):
     """
@@ -15,6 +15,13 @@ def logp(s):
     mol = Chem.MolFromSmiles(s)
     return Descriptors.MolLogP(mol)
 
+def synthetic_accessibility(s):
+    """
+    computes synthetic acessibility, see:
+    <http://www.rdkit.org/docs/Overview.html> "SA_Score: Synthetic assessibility score"
+    """
+    mol = Chem.MolFromSmiles(s)
+    return calculateScore(mol)
 
 def canonical(s):
     """
