@@ -17,7 +17,6 @@ from .transformers import ZERO_CHARACTER
 
 from .objectives import objectives as custom_objectives
 from .objectives import metrics as custom_metrics
-from .layers import layers as custom_layers
 
 config = default_config
 transformers = config.transformers.copy()
@@ -28,7 +27,6 @@ custom_objects.update(objectives)
 metrics = config.metrics.copy()
 metrics.update(custom_metrics)
 layers = config.layers.copy()
-layers.update(custom_layers)
 custom_objects.update(layers)
 config = config._replace(
     transformers=transformers,
