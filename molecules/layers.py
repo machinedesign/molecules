@@ -21,12 +21,11 @@ class MaskingOneHot(Layer):
         return mask
 
     def call(self, x, mask=None):
-        boolean_mask = K.any(K.not_equal(x, self.mask_value),
-                             axis=-1, keepdims=True)
-        return x * K.cast(boolean_mask, K.floatx())
+        mask = K.not_equal(x, self.masking_character)
+        return x * K.cast(mask, K.floatx())
 
     def get_config(self):
-        config = {'mask_value': self.mask_value}
+        config = {'masking_character': self.masking_character}
         base_config = super(MaskingOneHot, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 

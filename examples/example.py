@@ -1,5 +1,4 @@
 import os
-import numpy as np
 from clize import run
 
 from machinedesign.utils import write_csv
@@ -8,9 +7,9 @@ from molecules import molecule
 from molecules.interface import train
 from molecules.interface import generate
 
-from molecules import transformers
-
 max_length = 73
+
+
 def train_model():
     params = {
         'family': 'autoencoder',
@@ -89,7 +88,7 @@ def train_model():
             'max_nb_epochs': 1000,
             'batch_size': 128,
             'pred_batch_size': 128,
-            'loss': {'name': 'categorical_crossentropy', 'params':{'shifted': True, 'masked': True}},
+            'loss': {'name': 'categorical_crossentropy', 'params': {'shifted': True, 'masked': True}},
             'budget_secs': 86400,
             'seed': 42
         },
@@ -107,7 +106,7 @@ def gen(*, model_folder='out'):
             'name': 'greedy',
             'params': {
                 'nb_samples': 1000,
-                'seed': 42 
+                'seed': 42
             },
             'save_folder': folder,
         }
