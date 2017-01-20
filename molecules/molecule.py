@@ -7,6 +7,7 @@ from rdkit.Chem import Descriptors
 from rdkit.Chem import Draw
 from .sascorer import calculateScore
 
+
 def logp(s):
     """
     computes the logP descriptor a SMILES representation of the molecule.
@@ -15,6 +16,7 @@ def logp(s):
     mol = Chem.MolFromSmiles(s)
     return Descriptors.MolLogP(mol)
 
+
 def synthetic_accessibility(s):
     """
     computes synthetic acessibility, see:
@@ -22,6 +24,7 @@ def synthetic_accessibility(s):
     """
     mol = Chem.MolFromSmiles(s)
     return calculateScore(mol)
+
 
 def canonical(s):
     """
