@@ -79,7 +79,7 @@ class DocumentVectorizer(object):
         self.word2int_ = {}
         self.int2word_ = {}
         self.nb_words_ = 0
-        #ensure that the ZERO_CHARACTER takes the index 0
+        # ensure that the ZERO_CHARACTER takes the index 0
         # in the vectorized representation by appending it
         # first to the vocabulary.
         self._update(set([ZERO_CHARACTER]))
@@ -116,7 +116,7 @@ class DocumentVectorizer(object):
         doc = list(map(self._word_transform, doc))
         if self.length:
             len_doc = min(
-                len(doc) + self.begin_character + self.end_character, 
+                len(doc) + self.begin_character + self.end_character,
                 self.length)  # max possible length is self.length
             if self.begin_character:
                 len_doc -= 1
