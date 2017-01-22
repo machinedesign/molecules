@@ -1,7 +1,6 @@
 #!/bin/sh
 #from : http://zinc15.docking.org/tranches/home/
 # filters : React=Clean, Purch=In-Stock, Drug-like
-# md5 : 8aa86b495fc04262d1ede38dbde2c6a8
 MD5=8aa86b495fc04262d1ede38dbde2c6a8
 if [ ! -f zinc15.txt ]; then
     mkdir -p raw

@@ -9,7 +9,8 @@ from molecules import molecule
 from clize import run
 
 
-def preprocess(filename, out, *, max_length=120):
+def preprocess(filename, out, *, max_length=120, seed=42):
+    np.random.seed(seed)
     max_length = int(max_length)
     data = pd.read_csv(filename)
     data = data['smiles']
@@ -21,6 +22,7 @@ def preprocess(filename, out, *, max_length=120):
     data = map(molecule.canonical, data)
     data = list(data)
     data = np.array(data)
+    np.random.shuffle(data)
     print(data.dtype)
     np.savez(out, X=data)
 

@@ -1,6 +1,5 @@
 #!/bin/sh
 #from http://zinc.docking.org/subsets/clean-drug-like
-#md5:80b2490cce2124f472505c46b755f630
 MD5=80b2490cce2124f472505c46b755f630
 if [ ! -f 13_prop.xls ]; then
     wget http://zinc.docking.org/db/bysubset/13/13_prop.xls
