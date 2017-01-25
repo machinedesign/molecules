@@ -1,6 +1,9 @@
 import os
 import numpy as np
 
+from fluentopt import Bandit
+from fluentopt.bandit import ucb_minimize
+
 from machinedesign.utils import mkdir_path
 
 from machinedesign.autoencoder.interface import train as _train
@@ -9,6 +12,8 @@ from machinedesign.autoencoder.interface import load as load_
 from machinedesign.autoencoder.interface import custom_objects
 
 from machinedesign.transformers import onehot
+from machinedesign.transformers import inverse_transform_one
+
 from machinedesign.data import intX
 
 from .transformers import DocumentVectorizer
@@ -17,6 +22,8 @@ from .transformers import ZERO_CHARACTER
 
 from .objectives import objectives as custom_objectives
 from .objectives import metrics as custom_metrics
+
+from . import molecule
 
 config = default_config
 transformers = config.transformers.copy()
@@ -180,3 +187,41 @@ def _softmax(x, axis=-1):
     e_x = np.exp(x - np.max(x, axis=axis, keepdims=True))
     out = e_x / e_x.sum(axis=axis, keepdims=True)
     return out
+
+
+def bayesopt(params):
+    method = params['method']
+    generator = load(params['generator']['folder'])
+    encoder = load(params['encoder']['folder'])
+    nb_iter = params['nb_iter']
+    objective = params['objective']
+
+    buffer = []
+
+    def sampler(rng, buffer=buffer):
+        if len(buffer):
+            b = buffer[0]
+            buffer[:] = buffer[1:]
+            return b
+        else:
+            text = _run_method(method, generator)
+            buffer[:] = text.copy()
+            b = buffer[0]
+            buffer[:] = buffer[1:]
+            return b
+
+    opt = Bandit(sampler=sampler, score=ucb_minimize)
+    objective_func = _get_objective_func(objective)
+    for _ in range(nb_iter):
+        h = opt.suggest()
+        h = np.array(h)
+        h = h[np.newaxis, :]
+        x = encoder.predict(h)
+        x = inverse_transform_one(x, encoder.transformers)
+        x = x[0]
+        y = objective_func(x)
+        opt.update(x=x, y=y)
+
+
+def _get_objective_func(name):
+    return molecule.logp
