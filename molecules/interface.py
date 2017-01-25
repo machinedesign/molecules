@@ -48,20 +48,29 @@ def generate(params):
     model_params = params['model']
     folder = model_params['folder']
     model = load(folder)
-    return _run_method(method, model)
+    return _run_method_and_save(method, model)
+
+
+def _run_method_and_save(method, model):
+    text = _run_method(method, model)
+    save_folder = method['save_folder']
+    _save(text, save_folder)
+    return text
 
 
 def _run_method(method, model):
     name = method['name']
     params = method['params']
-    save_folder = method['save_folder']
     func = _get_method(name)
     text = func(params, model)
+    return text
+
+
+def _save(text, save_folder):
     mkdir_path(save_folder)
     with open(os.path.join(save_folder, 'generated.txt'), 'w') as fd:
         for doc in text:
             fd.write(doc + '\n')
-    return text
 
 
 def _get_method(name):
