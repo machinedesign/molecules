@@ -71,8 +71,7 @@ def load(folder, custom_objects=custom_objects):
 
 def generate(params):
     method = params['method']
-    model_params = params['model']
-    folder = model_params['folder']
+    folder = params['model_folder']
     model = load(folder)
     return _run_method_and_save(method, model)
 
@@ -94,10 +93,7 @@ def _run_method(method, model):
 
 def _save(text, save_folder):
     mkdir_path(save_folder)
-    with open(os.path.join(save_folder, 'generated.txt'), 'w') as fd:
-        for doc in text:
-            fd.write(doc + '\n')
-
+    np.savez(os.path.join(save_folder,'generated.npz'), X=text)
 
 def get_method(name):
     if name == "greedy":
