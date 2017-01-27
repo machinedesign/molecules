@@ -35,17 +35,19 @@ def _masked_categorical_crossentropy(y_true, y_pred, backend=K):
     # masking is done through the zero character
     # WARNING : assumes non zero character has id 0
     # this is enforced by DocumentVectorizer, see
-    # the code
+    # thwwe code
     mask = B.not_equal(y_true.argmax(axis=2), 0)
     # mask shape is (E, T)
     yt = y_true.reshape((-1, y_true.shape[-1])).argmax(axis=1)
+    # yt shape is (E * T,)
     yp = y_pred.reshape((-1, y_pred.shape[-1]))
+    # yp shape is (E * T, nb_words)
     L = -B.log(yp[B.arange(yt.shape[0]), yt])
     # L shape is (E * T,)
     L = L.reshape((E, T))
     # mask then divide by the length of the masked sequence insteaf of taking
     # the mean with the length of the padded the sequence.
-    L = (L * mask) / mask.sum(axis=1, keepdims=True)
+    L = (L * mask) * (T / mask.sum(axis=1, keepdims=True))
     return L
 
 
@@ -61,10 +63,8 @@ def precision_metric(y_true, y_pred, shifted=False, masked=False):
     if masked:
         return _masked_precision_metric(y_true, y_pred)
     else:
-        y_true = y_true.reshape((-1, y_true.shape[-1]))
-        y_pred = y_pred.reshape((-1, y_pred.shape[-1]))
-        y_true = y_true.argmax(axis=1)
-        y_pred = y_pred.argmax(axis=1)
+        y_true = y_true.reshape((-1, y_true.shape[-1])).argmax(axis=1)
+        y_pred = y_pred.reshape((-1, y_pred.shape[-1])).argmax(axis=1)
         return (y_true == y_pred)
 
 
@@ -74,10 +74,11 @@ def _masked_precision_metric(y_true, y_pred):
     considers only the characters of y_true that are non zero
     when computing the precision.
     """
-    y_true = y_true.reshape((-1, y_true.shape[-1]))
-    y_pred = y_pred.reshape((-1, y_pred.shape[-1]))
-    y_true = y_true.argmax(axis=1)
-    y_pred = y_pred.argmax(axis=1)
+    y_true = y_true.reshape((-1, y_true.shape[-1])).argmax(axis=1)
+    #y_true is (E * T,)
+    y_pred = y_pred.reshape((-1, y_pred.shape[-1])).argmax(axis=1)
+    #y_pred is (E * T,)
+    
     # masking is done through the zero character
     # WARNING : assumes non zero character has id 0
     # this is enforced by DocumentVectorizer, see

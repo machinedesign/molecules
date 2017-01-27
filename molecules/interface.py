@@ -1,17 +1,27 @@
 import os
 import numpy as np
+from collections import deque
+
+from scipy.stats import norm
+
+import keras.backend as K
 
 from fluentopt import Bandit
-from fluentopt.bandit import ucb_minimize
+from fluentopt.bandit import ucb_maximize
+from fluentopt.transformers import Wrapper
+from fluentopt.utils import RandomForestRegressorWithUncertainty
 
+from machinedesign.common import get_layers
 from machinedesign.utils import mkdir_path
 
 from machinedesign.autoencoder.interface import train as _train
 from machinedesign.autoencoder.interface import default_config
-from machinedesign.autoencoder.interface import load as load_
+from machinedesign.autoencoder.interface import load as _load
 from machinedesign.autoencoder.interface import custom_objects
+from machinedesign.autoencoder.interface import get_method as _get_method
 
 from machinedesign.transformers import onehot
+from machinedesign.transformers import transform_one
 from machinedesign.transformers import inverse_transform_one
 
 from machinedesign.data import intX
@@ -24,6 +34,15 @@ from .objectives import objectives as custom_objectives
 from .objectives import metrics as custom_metrics
 
 from . import molecule
+
+import logging
+
+logging.basicConfig(
+    format='%(asctime)s ## %(message)s',
+    level=logging.DEBUG,
+    datefmt='%m/%d/%Y,%I:%M:%S')
+logger = logging.getLogger(__name__)
+
 
 config = default_config
 transformers = config.transformers.copy()
@@ -47,7 +66,7 @@ def train(params):
 
 
 def load(folder, custom_objects=custom_objects):
-    return load_(folder, custom_objects=custom_objects)
+    return _load(folder, custom_objects=custom_objects)
 
 
 def generate(params):
@@ -68,7 +87,7 @@ def _run_method_and_save(method, model):
 def _run_method(method, model):
     name = method['name']
     params = method['params']
-    func = _get_method(name)
+    func = get_method(name)
     text = func(params, model)
     return text
 
@@ -80,9 +99,11 @@ def _save(text, save_folder):
             fd.write(doc + '\n')
 
 
-def _get_method(name):
-    return {'greedy': _greedy}[name]
-
+def get_method(name):
+    if name == "greedy":
+        return _greedy
+    else:
+        return _get_method(name)
 
 def _greedy(params, model):
     nb_samples = params['nb_samples']
@@ -189,39 +210,71 @@ def _softmax(x, axis=-1):
     return out
 
 
-def bayesopt(params):
-    method = params['method']
+def _bayesopt(params):
+    nb_suggestions = params['nb_suggestions']
+    method = params['generator']['method']
     generator = load(params['generator']['folder'])
     encoder = load(params['encoder']['folder'])
+    input_layer = params['encoder']['input_layer']
+    code_layer = params['encoder']['code_layer']
     nb_iter = params['nb_iter']
     objective = params['objective']
 
-    buffer = []
+    layers = list(get_layers(encoder))
+    layers = {layer.name: layer for layer in layers}
 
-    def sampler(rng, buffer=buffer):
-        if len(buffer):
-            b = buffer[0]
-            buffer[:] = buffer[1:]
-            return b
+    input_layer = layers[input_layer]
+    code_layer = layers[code_layer]
+    encode = K.function(
+        [input_layer.input], 
+        [code_layer.output])
+    get_str =  {}
+    def sampler(rng, buffer=deque(), get_str=get_str):
+        if buffer:
+            return buffer.pop()
         else:
-            text = _run_method(method, generator)
-            buffer[:] = text.copy()
-            b = buffer[0]
-            buffer[:] = buffer[1:]
-            return b
+            text = []
+            while len(text) == 0:
+                text = _run_method(method, generator)
+                text = list(filter(molecule.is_valid, text))
+            hbuf = transform_one(text, encoder.transformers)
+            hbuf, = encode([hbuf])
+            hbuf = hbuf.tolist()
+            for t, h in zip(text, hbuf):
+                get_str[id(h)] = t
+            buffer.extendleft(hbuf)
+            return buffer.pop()
 
-    opt = Bandit(sampler=sampler, score=ucb_minimize)
+    def expected_improvement(model, inputs):
+        fmax = expected_improvement.fmax
+        fmin = -fmax
+        mu, std = model.predict(inputs, return_std=True)
+        # eq15 from "Efficient Global Optimization of Expensive Black-Box Functions"
+        return (fmin - mu) * norm.cdf((fmin - mu) / std) + std * norm.pdf((fmin - mu) / std)
+
+    expected_improvement.fmax = -np.inf
+    
+    model = Wrapper(RandomForestRegressorWithUncertainty())
+    opt = Bandit(
+        sampler=sampler, 
+        score=expected_improvement, 
+        nb_suggestions=nb_suggestions,
+        model=model)
     objective_func = _get_objective_func(objective)
-    for _ in range(nb_iter):
-        h = opt.suggest()
-        h = np.array(h)
-        h = h[np.newaxis, :]
-        x = encoder.predict(h)
-        x = inverse_transform_one(x, encoder.transformers)
-        x = x[0]
-        y = objective_func(x)
-        opt.update(x=x, y=y)
 
+    inputs = []
+    outputs = []
+    for it in range(nb_iter):
+        logger.info('Iteration {}'.format(it + 1))
+        h = opt.suggest()
+        x = get_str[id(h)]
+        y = objective_func(x)
+        opt.update(x=h, y=y)
+        inputs.append(x)
+        outputs.append(y)
+        logger.info('input : {}, score : {}'.format(x, y))
+        expected_improvement.fmax = max(y, expected_improvement.fmax)
+    return inputs, outputs 
 
 def _get_objective_func(name):
     return molecule.logp
