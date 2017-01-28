@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from collections import deque
-
+from functools import partial
 from scipy.stats import norm
 
 import keras.backend as K
@@ -18,7 +18,8 @@ from machinedesign.autoencoder.interface import train as _train
 from machinedesign.autoencoder.interface import default_config
 from machinedesign.autoencoder.interface import load as _load
 from machinedesign.autoencoder.interface import custom_objects
-from machinedesign.autoencoder.interface import get_method as _get_method
+from machinedesign.autoencoder.interface import iterative_refinement as _iterative_refinement
+from machinedesign.autoencoder.interface import _apply_binarization
 
 from machinedesign.transformers import onehot
 from machinedesign.transformers import transform_one
@@ -29,6 +30,7 @@ from machinedesign.data import intX
 from .transformers import DocumentVectorizer
 from .transformers import BEGIN_CHARACTER
 from .transformers import ZERO_CHARACTER
+from .transformers import END_CHARACTER
 
 from .objectives import objectives as custom_objectives
 from .objectives import metrics as custom_metrics
@@ -98,8 +100,23 @@ def _save(text, save_folder):
 def get_method(name):
     if name == "greedy":
         return _greedy
+    elif name == 'iterative_refinement':
+        return partial(_iterative_refinement, apply_binarization=apply_binarization)
     else:
-        return _get_method(name)
+        raise ValueError('Invalid generation procedure : {}'.format(name))
+
+def apply_binarization(name, params, X, rng=np.random):
+    if name == 'trim':
+        chars = X.argmax(axis=2)
+        for i in range(X.shape[0]):
+            char_i = chars[i]
+            if (char_i == END_CHARACTER).sum()>0:
+                t = (char_i == END_CHARACTER).argmax()
+                X[i, t+1:] = 0
+                X[i, t+1:, ZERO_CHARACTER]=1
+        return X
+    else:
+        return _apply_binarization(name, params, X, rng=np.random)
 
 def _greedy(params, model):
     nb_samples = params['nb_samples']
