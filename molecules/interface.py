@@ -104,27 +104,35 @@ def get_method(name):
 def _greedy(params, model):
     nb_samples = params['nb_samples']
     seed = params['seed']
-    vectorizer = model.transformers[0]
+    batch_size = params['batch_size']
+    vectorizer = model.transformers[-1]
 
     def pred_func(x, t):
         x = onehot(x, D=vectorizer.nb_words_)
         y = model.predict(x)
         y = y[:, t, :]
         return y
-
-    text = _generate_text_greedy(
-        pred_func,
-        vectorizer,
-        nb_samples=nb_samples,
-        method='proba',
-        random_state=seed)
+    
+    rng = np.random.RandomState(seed)
+    texts = []
+    for start in range(0, nb_samples, batch_size):
+        end = min(start + batch_size, nb_samples)
+        nb = end - start
+        text = _generate_text_greedy(
+            pred_func,
+            vectorizer,
+            nb_samples=nb,
+            method='proba',
+            rng=rng)
+        texts.append(text)
+    text = np.concatenate(texts, axis=0)
     return text
 
 
 def _generate_text_greedy(pred_func, vectorizer, nb_samples=1,
                           method='argmax', temperature=1,
                           apply_softmax=False,
-                          random_state=None):
+                          rng=np.random):
     """
     pred_func : function
         function which predicts the next character based on the first characters.
@@ -161,8 +169,8 @@ def _generate_text_greedy(pred_func, vectorizer, nb_samples=1,
         if temperature != 1, then apply_softmax should be True and pred_func must
         return pre-softmax activations.
 
-    random_state : int or None
-        random state to use for generation.
+    rng : np.random.RandomState(defaut=np.random)
+        random generator to use.
         Only have effect if method == 'proba'.
 
     Returns
@@ -174,7 +182,6 @@ def _generate_text_greedy(pred_func, vectorizer, nb_samples=1,
     assert method in ('proba', 'argmax')
     if temperature != 1:
         assert apply_softmax
-    rng = np.random.RandomState(random_state)
     # initialize the strings with the begin character
     shape = (nb_samples, vectorizer.length)
     gen = np.ones(shape) * ZERO_CHARACTER
