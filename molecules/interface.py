@@ -6,11 +6,6 @@ from scipy.stats import norm
 
 import keras.backend as K
 
-from fluentopt import Bandit
-from fluentopt.bandit import ucb_maximize
-from fluentopt.transformers import Wrapper
-from fluentopt.utils import RandomForestRegressorWithUncertainty
-
 from machinedesign.common import get_layers
 from machinedesign.utils import mkdir_path
 
@@ -26,6 +21,7 @@ from machinedesign.transformers import transform_one
 from machinedesign.transformers import inverse_transform_one
 
 from machinedesign.data import intX
+from machinedesign.utils import get_axis
 
 from .transformers import DocumentVectorizer
 from .transformers import BEGIN_CHARACTER
@@ -61,7 +57,6 @@ config = config._replace(
     objectives=objectives,
     metrics=metrics,
     layers=layers)
-
 
 def train(params):
     return _train(params, config=config)
@@ -107,13 +102,27 @@ def get_method(name):
 
 def apply_binarization(name, params, X, rng=np.random):
     if name == 'trim':
-        chars = X.argmax(axis=2)
+        length = params.get('length')
+        if length:
+            mean_length = length['mean']
+            std_length = length['std']
+        onehot = params['onehot']
+        axis = get_axis(params['axis'])
+        if onehot:
+            X = (X == X.max(axis=axis, keepdims=True))
+        chars = X.argmax(axis=axis)
         for i in range(X.shape[0]):
             char_i = chars[i]
             if (char_i == END_CHARACTER).sum()>0:
                 t = (char_i == END_CHARACTER).argmax()
                 X[i, t+1:] = 0
                 X[i, t+1:, ZERO_CHARACTER]=1
+            elif length:
+                t = int(rng.normal(mean_length, std_length))
+                X[i, t, :] = 0
+                X[i, t, END_CHARACTER] = 1
+                X[i, t+1:, :] = 0
+                X[i, t+1:, ZERO_CHARACTER] = 1
         return X
     else:
         return _apply_binarization(name, params, X, rng=np.random)
@@ -223,78 +232,7 @@ def _generate_text_greedy(pred_func, vectorizer, nb_samples=1,
     gen = vectorizer.inverse_transform(gen)
     return gen
 
-
 def _softmax(x, axis=-1):
     e_x = np.exp(x - np.max(x, axis=axis, keepdims=True))
     out = e_x / e_x.sum(axis=axis, keepdims=True)
     return out
-
-
-def _bayesopt(params):
-    nb_suggestions = params['nb_suggestions']
-    method = params['generator']['method']
-    generator = load(params['generator']['folder'])
-    encoder = load(params['encoder']['folder'])
-    input_layer = params['encoder']['input_layer']
-    code_layer = params['encoder']['code_layer']
-    nb_iter = params['nb_iter']
-    objective = params['objective']
-
-    layers = list(get_layers(encoder))
-    layers = {layer.name: layer for layer in layers}
-
-    input_layer = layers[input_layer]
-    code_layer = layers[code_layer]
-    encode = K.function(
-        [input_layer.input], 
-        [code_layer.output])
-    get_str =  {}
-    def sampler(rng, buffer=deque(), get_str=get_str):
-        if buffer:
-            return buffer.pop()
-        else:
-            text = []
-            while len(text) == 0:
-                text = _run_method(method, generator)
-                text = list(filter(molecule.is_valid, text))
-            hbuf = transform_one(text, encoder.transformers)
-            hbuf, = encode([hbuf])
-            hbuf = hbuf.tolist()
-            for t, h in zip(text, hbuf):
-                get_str[id(h)] = t
-            buffer.extendleft(hbuf)
-            return buffer.pop()
-
-    def expected_improvement(model, inputs):
-        fmax = expected_improvement.fmax
-        fmin = -fmax
-        mu, std = model.predict(inputs, return_std=True)
-        # eq15 from "Efficient Global Optimization of Expensive Black-Box Functions"
-        return (fmin - mu) * norm.cdf((fmin - mu) / std) + std * norm.pdf((fmin - mu) / std)
-
-    expected_improvement.fmax = -np.inf
-    
-    model = Wrapper(RandomForestRegressorWithUncertainty())
-    opt = Bandit(
-        sampler=sampler, 
-        score=expected_improvement, 
-        nb_suggestions=nb_suggestions,
-        model=model)
-    objective_func = _get_objective_func(objective)
-
-    inputs = []
-    outputs = []
-    for it in range(nb_iter):
-        logger.info('Iteration {}'.format(it + 1))
-        h = opt.suggest()
-        x = get_str[id(h)]
-        y = objective_func(x)
-        opt.update(x=h, y=y)
-        inputs.append(x)
-        outputs.append(y)
-        logger.info('input : {}, score : {}'.format(x, y))
-        expected_improvement.fmax = max(y, expected_improvement.fmax)
-    return inputs, outputs 
-
-def _get_objective_func(name):
-    return molecule.logp
