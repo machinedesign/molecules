@@ -24,11 +24,13 @@ def process(filename, out, threshold=100, random_state=42, max_length=MAX_LENGTH
         y.append(is_active)
     X = np.array(X)
     y = np.array(y)
+    smiles = np.array(smiles.tolist())
     ind = np.arange(len(X))
     rng.shuffle(ind)
     X = X[ind]
     y = y[ind]
-    np.savez(out, X=np.array(smiles.tolist()), V=X, y=y)
+    smiles = smiles[ind]
+    np.savez(out, X=smiles, V=X, y=y)
 
 if __name__ == '__main__':
     # source : https://www.ebi.ac.uk/chembl/target/inspect/CHEMBL224
