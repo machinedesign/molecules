@@ -5,6 +5,7 @@ including molecule descriptors.
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 from rdkit.Chem import Draw
+from rdkit.Chem import AllChem
 from .sascorer import calculateScore
 from .qed import weights_none
 from .qed import weights_mean
@@ -87,6 +88,30 @@ def ring_penalty(s, ring_length_thresh=6):
     else:
         return 0
 
+def circular_fingerprint(s, radius=2, n_bits=1024):
+    """
+    Computes circular fingerprint[1] with the given radius and number of bits.
+    Fingerprints are boolean vectors representing molecules.
+    They can be  used for molecule similarity or as features 
+    for building machine learning classifiers or regressors.
+
+    with radius=2 and n_bits=1024 (the default), it implements the fingerprint named 
+    ECFP4, which is the one used in [2].
+
+    [1] Rogers, D.; Hahn, M. “Extended-Connectivity Fingerprints.” J. Chem. Inf. and Model. 50:742-54 (2010).
+    [2] Generating Focussed Molecule Libraries for Drug Discovery with Recurrent Neural Networks
+        Segler, Marwin HS and Kogej, Thierry and Tyrchan, Christian and Waller, Mark P.
+
+    Returns
+    -------
+
+    a list of 'n_bits' size, where each element is 0 or 1.
+    """
+    m = _mol_from_smiles(s)
+    vect = AllChem.GetMorganFingerprintAsBitVect(m, radius, nBits=n_bits).ToBitString()
+    vect = map(int, vect)
+    vect = list(vect)
+    return vect
 
 def draw_image(s, filename, size=(300, 300)):
     """takes a SMILES molecule and draw it in an png in filename. size is in pixels"""

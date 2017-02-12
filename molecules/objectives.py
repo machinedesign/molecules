@@ -4,6 +4,7 @@ import keras.backend as K
 from machinedesign.objectives import categorical_crossentropy as _categorical_crossentropy
 from machinedesign.metrics import categorical_crossentropy as _categorical_crossentropy_metric
 
+from sklearn.metrics import f1_score
 
 def categorical_crossentropy(y_true, y_pred, masked=False, shifted=False):
     if shifted:
@@ -88,14 +89,23 @@ def _masked_precision_metric(y_true, y_pred):
     y_pred = y_pred[non_zero]
     return (y_true == y_pred)
 
+def accuracy(y_true, y_pred):
+    yt = y_true.argmax(axis=1)
+    yp = y_pred.argmax(axis=1)
+    return (yt==yp)
+
+def f1(y_true, y_pred):
+    yt = y_true.argmax(axis=1)
+    yp = y_pred.argmax(axis=1)
+    return f1_score(yt, yp, average='sample')
 
 objectives = {
     'categorical_crossentropy': categorical_crossentropy,
-    # TODO remove, only there for compability with old models using that
-    'shifted_categorical_crossentropy': categorical_crossentropy
 }
 
 metrics = {
     'categorical_crossentropy': categorical_crossentropy_metric,
     'precision': precision_metric,
+    'accuracy': accuracy,
+    'f1': f1
 }

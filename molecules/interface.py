@@ -3,8 +3,11 @@ import numpy as np
 from collections import deque
 from functools import partial
 from scipy.stats import norm
+import logging
+import pickle
 
 import keras.backend as K
+from keras.models import Model
 
 from machinedesign.common import get_layers
 from machinedesign.utils import mkdir_path
@@ -31,9 +34,10 @@ from .transformers import END_CHARACTER
 from .objectives import objectives as custom_objectives
 from .objectives import metrics as custom_metrics
 
-from . import molecule
+from .model_builders import builders
 
-import logging
+from . import molecule
+from .ngram import NGram
 
 logging.basicConfig(
     format='%(asctime)s ## %(message)s',
@@ -52,26 +56,59 @@ metrics = config.metrics.copy()
 metrics.update(custom_metrics)
 layers = config.layers.copy()
 custom_objects.update(layers)
+model_builders = config.model_builders
+model_builders.update(builders)
 config = config._replace(
     transformers=transformers,
     objectives=objectives,
     metrics=metrics,
-    layers=layers)
+    layers=layers,
+    model_builders=model_builders)
 
 def train(params):
-    return _train(params, config=config)
+    if params['family'] == 'autoencoder':
+        return _train(params, config=config)
+    elif params['family'] == 'ngram':
+        return _train_ngram(params)
 
+def _train_ngram(params):
+    model = params['model']
+    min_gram = model['min_gram']
+    max_gram = model['max_gram']
+    filename = params['data']['filename']
+    start = params['data']['start']
+    nb = params['data']['nb']
+    folder = params['report']['outdir']
+    data = np.load(filename)
+    text = data['X'][start:nb]
+    text = text.tolist()
+    max_size = max(map(len, text))
+    model = NGram(min_gram=min_gram, max_gram=max_gram, begin='^', end='_')
+    model.fit(text)
+    mkdir_path(folder)
+    model.history_stats = []
+    with open(os.path.join(folder, 'model.pkl'), 'wb') as fd:
+        pickle.dump(model, fd)
+    return model
 
 def load(folder, custom_objects=custom_objects):
-    return _load(folder, custom_objects=custom_objects)
+    if os.path.exists(os.path.join(folder, 'model.h5')):
+        return _load(folder, custom_objects=custom_objects)
+    elif os.path.exists(os.path.join(folder, 'model.pkl')):
+        return _load_ngram(folder)
+    else:
+        raise ValueError('Doesnt find any model in {}'.format(folder))
 
+def _load_ngram(folder):
+    with open(os.path.join(folder, 'model.pkl'), 'rb') as fd:
+        model = pickle.load(fd)
+    return model
 
 def generate(params):
     method = params['method']
     folder = params['model_folder']
     model = load(folder)
     return _run_method_and_save(method, model)
-
 
 def _run_method_and_save(method, model):
     text = _run_method(method, model)
@@ -87,7 +124,6 @@ def _run_method(method, model):
     text = func(params, model)
     return text
 
-
 def _save(text, save_folder):
     mkdir_path(save_folder)
     np.savez(os.path.join(save_folder,'generated.npz'), X=text)
@@ -97,6 +133,8 @@ def get_method(name):
         return _greedy
     elif name == 'iterative_refinement':
         return partial(_iterative_refinement, apply_binarization=apply_binarization)
+    elif name == 'ngram':
+        return _ngram
     else:
         raise ValueError('Invalid generation procedure : {}'.format(name))
 
@@ -154,6 +192,21 @@ def _greedy(params, model):
     text = np.concatenate(texts, axis=0)
     return text
 
+def _ngram(params, model):
+    nb_samples = params['nb_samples']
+    seed = params['seed']
+    max_length = params['max_length']
+    rng = np.random.RandomState(seed)
+    text = []
+    while len(text) < nb_samples:
+        s = model.generate(
+            rng=rng, 
+            max_size=max_length, 
+            none_if_doesnt_end=True)
+        if s:
+            text.append(s)
+    text = np.array(text)
+    return text
 
 def _generate_text_greedy(pred_func, vectorizer, nb_samples=1,
                           method='argmax', temperature=1,
