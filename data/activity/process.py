@@ -2,9 +2,13 @@ import numpy as np
 import pandas as pd
 from molecules.interface import load
 from molecules.molecule import circular_fingerprint
+from molecules.molecule import canonical
 import editdistance
 
 MAX_LENGTH = 120
+allowed = '#%()+-.0123456789=ABCFHIKLMNOPRSTVXZ[]abcegilnoprst'
+allowed = set(allowed)
+
 def process(filename, out, threshold=100, random_state=42, max_length=MAX_LENGTH):
     rng = np.random.RandomState(random_state)
     df = pd.read_table(filename)
@@ -16,20 +20,26 @@ def process(filename, out, threshold=100, random_state=42, max_length=MAX_LENGTH
     rows = []
     X = []
     y = []
+    S = []
     for i in range(len(smiles)):
         s = smiles.iloc[i]
+        s = canonical(s)
+        if not set(s).issubset(allowed):
+            continue
         vect = circular_fingerprint(s)
         X.append(vect)
         is_active = int(active.iloc[i])
         y.append(is_active)
+        S.append(s)
     X = np.array(X)
     y = np.array(y)
-    smiles = np.array(smiles.tolist())
+    smiles = np.array(S)
     ind = np.arange(len(X))
     rng.shuffle(ind)
     X = X[ind]
     y = y[ind]
     smiles = smiles[ind]
+    print(smiles.shape)
     np.savez(out, X=smiles, V=X, y=y)
 
 if __name__ == '__main__':
