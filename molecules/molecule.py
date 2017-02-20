@@ -54,9 +54,13 @@ def qed(s, weights='none'):
         - if weights is 'none' : the properties have all weight 1
         - if weights is 'mean': use the 'average' descriptor weights defined in [1]
         - if weights is 'max': use the 'maximal' descriptor weights defined in [1]
+    Note that [2] uses weights='mean'.
+
     [1] Uoyama, H., Goushi, K., Shizu, K., Nomura, H. & Adachi, C. Highly efficient organic
-    light-emitting diodes from delayed fluorescence. Nature 492, 234–238 (2012). URL
-    http://dx.doi.org/10.1038/nature11687.
+        light-emitting diodes from delayed fluorescence. Nature 492, 234–238 (2012). URL
+        http://dx.doi.org/10.1038/nature11687.
+    [2] Automatic chemical design using a data-driven continuous
+         representation of molecules
     """
     mol = _mol_from_smiles(s)
     if weights == 'none':

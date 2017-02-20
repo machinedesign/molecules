@@ -10,6 +10,7 @@ class NGram(object):
         self.begin = begin
         self.end = end
         self.models_ = {}
+        self.vocab_ = []
     
     def fit(self, corpus):
         degs = range(self.min_gram, self.max_gram + 1)
@@ -20,9 +21,10 @@ class NGram(object):
                 begin=self.begin, 
                 end=self.end)
            self.models_[deg] = model
+        self.vocab_ = list(set(char for doc in corpus for char in doc)) + [self.end]
     
     def generate(self, rng, max_size=15, none_if_doesnt_end=True):
-        return _generate(rng, self.models_, begin=self.begin, end=self.end, max_size=max_size, none_if_doesnt_end=none_if_doesnt_end)
+        return _generate(rng, self.models_, begin=self.begin, end=self.end, max_size=max_size, none_if_doesnt_end=none_if_doesnt_end, vocab=self.vocab_)
 
 def _build_model(data, deg=1, begin='^', end='$'):
     freq = defaultdict(_dict_of_float)
@@ -40,7 +42,7 @@ def _build_model(data, deg=1, begin='^', end='$'):
 def _dict_of_float():
     return defaultdict(float)
 
-def _generate(rng, models, begin='^', end='$', max_size=15, none_if_doesnt_end=True):
+def _generate(rng, models, begin='^', end='$', max_size=15, none_if_doesnt_end=True, vocab=None):
     degs = models.keys()
     degs = sorted(degs, reverse=True)
     maxdeg = max(degs)
@@ -56,11 +58,16 @@ def _generate(rng, models, begin='^', end='$', max_size=15, none_if_doesnt_end=T
             if prev in model:
                 pr = model
                 break
-        assert pr is not None
-        chars = list(pr[prev].keys())
-        probas = list(pr[prev].values())
-        char_idx = np.random.multinomial(1, probas).argmax()
-        char = chars[char_idx]
+        if pr is None:
+            #if all counts are 0 for all degs, choose the next character randomly
+            assert vocab
+            char_idx = rng.randint(0, len(vocab) - 1)
+            char = vocab[char_idx]
+        else:
+            chars = list(pr[prev].keys())
+            probas = list(pr[prev].values())
+            char_idx = np.random.multinomial(1, probas).argmax()
+            char = chars[char_idx]
         if char == end:
             ended = True
             break
