@@ -30,6 +30,8 @@ def process(*, filename='data/chembl22.npz', batch_size=128, out='transformers.p
         transformers,
         generator
     )
+    print(doc.words_)
+    print(len(doc.words_))
     with open(os.path.join(out), 'wb') as fd:
         pickle.dump(transformers, fd)
 
