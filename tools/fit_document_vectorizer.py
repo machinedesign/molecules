@@ -8,9 +8,13 @@ from molecules.transformers import DocumentVectorizer
 
 from clize import run
 
-def process(*, filename='data/chembl22.npz', batch_size=128, out='transformers.pkl'):
-    data = np.load(filename)
-    X = data['X']
+def process(*, filenames='data/chembl22.npz', batch_size=128, out='transformers.pkl'):
+    X = []
+    for filename in filenames.split(','):
+        data = np.load(filename)
+        x = data['X']
+        X.append(x)
+    X = np.concatenate(X, axis=0)
     batch_size = 128
     length = max(map(len, X))
     print('max length : {}'.format(length))
