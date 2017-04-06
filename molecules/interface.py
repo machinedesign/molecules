@@ -211,6 +211,7 @@ def _ngram(params, model):
 def _generate_text_greedy(pred_func, vectorizer, nb_samples=1,
                           method='argmax', temperature=1,
                           apply_softmax=False,
+                          max_length=None,
                           rng=np.random):
     """
     pred_func : function
@@ -247,6 +248,10 @@ def _generate_text_greedy(pred_func, vectorizer, nb_samples=1,
         whether to apply softmax to the values returned by pred_func.
         if temperature != 1, then apply_softmax should be True and pred_func must
         return pre-softmax activations.
+    
+    max_length : None or int
+        Maximum length of strings to generate. If None, maximum length
+        is vectorizer.length.
 
     rng : np.random.RandomState(defaut=np.random)
         random generator to use.
@@ -266,7 +271,9 @@ def _generate_text_greedy(pred_func, vectorizer, nb_samples=1,
     gen = np.ones(shape) * ZERO_CHARACTER
     gen[:, 0] = BEGIN_CHARACTER
     gen = intX(gen)
-    for i in range(1, vectorizer.length):
+    if max_length is None:
+        max_length = vectorizer.length
+    for i in range(1, max_length):
         pr = pred_func(gen, i - 1)
         if apply_softmax:
             pr = pr * temperature
