@@ -22,14 +22,14 @@ from machinedesign.autoencoder.interface import _apply_binarization
 from machinedesign.transformers import onehot
 from machinedesign.transformers import transform_one
 from machinedesign.transformers import inverse_transform_one
+from machinedesign.transformers import DocumentVectorizer
 
 from machinedesign.data import intX
 from machinedesign.utils import get_axis
 
-from .transformers import DocumentVectorizer
-from .transformers import BEGIN_CHARACTER
-from .transformers import ZERO_CHARACTER
-from .transformers import END_CHARACTER
+from machinedesign.transformers import BEGIN_CHARACTER
+from machinedesign.transformers import ZERO_CHARACTER
+from machinedesign.transformers import END_CHARACTER
 
 from .objectives import objectives as custom_objectives
 from .objectives import metrics as custom_metrics
