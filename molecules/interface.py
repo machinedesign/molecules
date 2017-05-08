@@ -31,13 +31,14 @@ from machinedesign.transformers import BEGIN_CHARACTER
 from machinedesign.transformers import ZERO_CHARACTER
 from machinedesign.transformers import END_CHARACTER
 
+from machinedesign.text.ngram import NGram
+
 from .objectives import objectives as custom_objectives
 from .objectives import metrics as custom_metrics
 
 from .model_builders import builders
 
 from . import molecule
-from .ngram import NGram
 
 logging.basicConfig(
     format='%(asctime)s ## %(message)s',
